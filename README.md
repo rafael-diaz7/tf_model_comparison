@@ -1,4 +1,5 @@
-Repository for examples of Keras classifiers
+Derived from nlp-cnu/keras_examples
+Using to compare training methods for language models
 
 requires python dev for tf-models-official
 sudo apt-get install python3.8-dev
