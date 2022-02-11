@@ -1,5 +1,6 @@
 from Classifier import *
 from Dataset import *
+import sys
 
 # Example to show and debug all implemented features
 def run_complex_example():
@@ -227,6 +228,11 @@ def run_essays_dataset():
 
 # Simple example to test multilabel text classification datasets
 def run_i2b2_dataset():
+    # hyperparameter search
+    # need to get system arguments [file, learning rate, drop out]
+    cmdargs = sys.argv
+    lr = cmdargs[1]
+    do = cmdargs[2]
    
     # training parameters
     max_epoch = 1000
@@ -235,8 +241,10 @@ def run_i2b2_dataset():
     early_stopping_monitor = 'loss'
 
     # model hyperparameters
-    learning_rate = 0.01
-    dropout_rate = 0.8
+    #learning_rate = 0.01
+    #dropout_rate = 0.8
+    learning_rate = lr
+    dropout_rate = do
     language_model_trainable = False
     
     # parameters to load and save a model
@@ -254,9 +262,13 @@ def run_i2b2_dataset():
     #data = i2b2Dataset(data_filepath)
     #exit()
 
+    # creating the file for writing metrics to
+    metric_file = "hyperparam_metrics/{}_{}.csv".format(learning_rate, dropout_rate)
+    with open(metric_file, 'w') as file:
+        file.write("epoch,time,num_neg,macro_precision,macro_recall,macro_F1,micro_precision,micro_recall,micro_F1")
     
     #create classifier and load data for a multiclass text classifier
-    classifier = MultiLabel_Text_Classifier(language_model_name, num_classes,
+    classifier = MultiLabel_Text_Classifier(language_model_name, num_classes, metric_file,
                                             max_length=max_length,
                                             learning_rate=learning_rate,
                                             language_model_trainable=language_model_trainable,

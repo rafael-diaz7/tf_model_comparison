@@ -1,6 +1,6 @@
 import subprocess
 
-subprocess.run(['mkdir', 'metrics'])
+subprocess.run(['mkdir', 'hyperparam_metrics'])
 
 learning_rates = [str((1 * (10 ** -x))) for x in range(8, 1, -1)] # 1 * 10^x ... 1e-8 -> 1e-1
 drop_out = ['0', '0.5', '0.9']

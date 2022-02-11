@@ -32,28 +32,8 @@ class Classifier(ABC):
     correctly, and also allows for variable length batches, which massively
     increases the speed of training.
     '''
-    #These are some of the HuggingFace Models which you can use
-    #general models
-    BASEBERT = 'bert-base-uncased'
-    DISTILBERT = 'distilbert-base-uncased'
-    ROBERTA = 'roberta-base'
-    GPT2 = 'gpt2'
-    ALBERT = 'albert-base-v2'
-
-    # social media models
-    ROBERTA_TWITTER = 'cardiffnlp/twitter-roberta-base'
-    BIOREDDIT_BERT = 'cambridgeltl/BioRedditBERT-uncased'
-
-    # biomedical and clinical models
-    # these all are written in pytorch so had to be converted
-    # see models directory for the models, and converting_pytorch_to_keras.txt
-    # for an explanation of where they came from and how they were converted
-    BIO_BERT = './models/biobert_v1.1_pubmed'
-    BLUE_BERT_PUBMED = './models/NCBI_BERT_pubmed_uncased_L-12_H-768_A-12'
-    BLUE_BERT_PUBMED_MIMIC = './models/NCBI_BERT_pubmed_mimic_uncased_L-12_H-768_A-12'
-    CLINICAL_BERT = './models/bert_pretrain_output_all_notes_150000'
-    DISCHARGE_SUMMARY_BERT = './models/bert_pretrain_output_disch_100000'
-    BIOCLINICAL_BERT = './models/biobert_pretrain_output_all_notes_150000'
+    # only using BIODISCHARGE SUMMARY BERT
+    # not typically tf model, has been converted
     BIODISCHARGE_SUMMARY_BERT = './models/biobert_pretrain_output_disch_100000'
     
     #some default parameter values
@@ -67,7 +47,7 @@ class Classifier(ABC):
     MODEL_OUT_FILE_NAME = ''
     
     @abstractmethod
-    def __init__(self, language_model_name, language_model_trainable=False, max_length=MAX_LENGTH, learning_rate=LEARNING_RATE, dropout_rate=DROPOUT_RATE):
+    def __init__(self, language_model_name, metric_file, language_model_trainable=False, max_length=MAX_LENGTH, learning_rate=LEARNING_RATE, dropout_rate=DROPOUT_RATE):
         '''
         Initializer for a language model. This class should be extended, and
         the model should be built in the constructor. This constructor does
@@ -78,6 +58,7 @@ class Classifier(ABC):
         '''
         self.tokenizer = None
         self.model = None
+        self.metric_file = metric_file
         self._language_model_name = language_model_name
         self._language_model_trainable = language_model_trainable
         self._max_length = max_length
@@ -172,97 +153,13 @@ class Classifier(ABC):
         self.model.load_weights(filepath)
 
 
-class Binary_Text_Classifier(Classifier):
-    
-    def __init__(self, language_model_name, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
-        Classifier.__init__(self, language_model_name, language_model_trainable=language_model_trainable, max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
-        #create the language model
-        language_model = self.load_language_model()
-
-        #print the GPUs that tensorflow can find, and enable memory growth.
-        # memory growth is something that CJ had to do, but doesn't work for me
-        # set memory growth prevents tensor flow from just grabbing all available VRAM
-        #physical_devices = tf.config.list_physical_devices('GPU')
-        #print (physical_devices)
-        #tf.config.experimental.set_memory_growth(physical_devices[0], True)
-        
-        #create the model
-        #create the input layer, it contains the input ids (from tokenizer) and the
-        # the padding mask (which masks padded values)
-        input_ids = Input(shape=(None,), dtype=tf.int32, name="input_ids")
-        input_padding_mask = Input(shape=(None,), dtype=tf.int32, name="input_padding_mask")
-
-        #create the embeddings - the 0th index is the last hidden layer
-        embeddings = language_model(input_ids=input_ids, attention_mask=input_padding_mask)[0]
-
-        #We can create a sentence embedding using the one directly from BERT, or using a biLSTM
-        # OR, we can return the sequence from BERT (just don't slice) or the BiLSTM (use retrun_sequences=True)
-        #create the sentence embedding layer - using the BERT sentence representation (cls token)    
-        #sentence_representation_language_model = embeddings[:,0,:]
-        #Note: we are slicing because this is a sentence classification task. We only need the cls predictions
-        # not the individual words, so just the 0th index in the 3D tensor. Other indices are embeddings for
-        # subsequent words in the sequence (http://jalammar.github.io/a-visual-guide-to-using-bert-for-the-first-time/)
-
-        #Alternatively, we can use a biLSTM to create a sentence representation -- This seems to generally work better
-        #create the sentence embedding layer using a biLSTM and BERT token representations
-        lstm_size=128
-        biLSTM_layer = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(units=lstm_size))
-        sentence_representation_biLSTM = biLSTM_layer(embeddings)
-        
-        #now, create some dense layers
-        #dense 1
-        dense1 = tf.keras.layers.Dense(256, activation='gelu')
-        dropout1 = tf.keras.layers.Dropout(self._dropout_rate)
-        output1 = dropout1(dense1(sentence_representation_biLSTM))
-        #output1 = dropout1(dense1(sentence_representation_language_model))
-    
-        #dense 2
-        dense2 = tf.keras.layers.Dense(128, activation='gelu')
-        dropout2 = tf.keras.layers.Dropout(self._dropout_rate)
-        output2 = dropout2(dense2(output1))
-
-        #dense 3
-        dense3 = tf.keras.layers.Dense(64, activation='gelu')
-        dropout3 = tf.keras.layers.Dropout(self._dropout_rate)
-        output3 = dropout3(dense3(output2))
-
-        #softmax
-        sigmoid_layer = tf.keras.layers.Dense(1, activation='sigmoid')
-        final_output = sigmoid_layer(output3)
-    
-        #combine the language model with the classificaiton part
-        self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
-    
-        #compile the model
-        optimizer = tf.keras.optimizers.Adam(lr=self._learning_rate)
-        self.model.compile(
-            optimizer=optimizer,
-            loss='binary_crossentropy',
-            metrics =['accuracy', tf.keras.metrics.Precision(), tf.keras.metrics.Recall(), tfa.metrics.F1Score(1)]
-        )
-
-        
 class MultiLabel_Text_Classifier(Classifier):
 
-    def __init__(self, language_model_name, num_classes, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
+    def __init__(self, language_model_name, num_classes, metric_file, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
         
-        '''
-        This is identical to the Binary_Text_Classifier, except the last layer uses
-        a softmax, loss is Categorical Cross Entropy and its output dimension is num_classes
-        Also, different metrics are reported.
-        You also need to make sure that the class input is the correct dimensionality by
-        using Dataset TODO --- need to write a new class?
-        '''
-        Classifier.__init__(self, language_model_name, language_model_trainable=language_model_trainable, max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
+        Classifier.__init__(self, language_model_name, metric_file, language_model_trainable=language_model_trainable, max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
         # set instance attributes
         self._num_classes = num_classes
-        
-        #print the GPUs that tensorflow can find, and enable memory growth.
-        # memory growth is something that CJ had to do, but doesn't work for me
-        # set memory growth prevents tensor flow from just grabbing all available VRAM
-        #physical_devices = tf.config.list_physical_devices('GPU')
-        #print (physical_devices)
-        #tf.config.experimental.set_memory_growth(physical_devices[0], True)
         
         #create the model
         #create the input layer, it contains the input ids (from tokenizer) and the
@@ -285,35 +182,19 @@ class MultiLabel_Text_Classifier(Classifier):
         # not the individual words, so just the 0th index in the 3D tensor. Other indices are embeddings for
         # subsequent words in the sequence (http://jalammar.github.io/a-visual-guide-to-using-bert-for-the-first-time/)
 
-        #Alternatively, we can use a biLSTM to create a sentence representation -- This seems to generally work better
-        #create the sentence embedding layer using a biLSTM and BERT token representations
-        #NOTE: for some reason this (a slice to a biLSTM) throws an error with numpy version >= 1.2
-        # but, it works with numpy 1.19.5
         lstm_size=128
         biLSTM_layer = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(units=lstm_size))
         sentence_representation_biLSTM = biLSTM_layer(embeddings)
         
-        #now, create some dense layers
-        #dense 1
+        # now, create one layer, sigmoid
+        # dense 1
         dense1 = tf.keras.layers.Dense(256, activation='gelu')
         dropout1 = tf.keras.layers.Dropout(self._dropout_rate)
         output1 = dropout1(dense1(sentence_representation_biLSTM))
-    
-        #dense 2
-        dense2 = tf.keras.layers.Dense(128, activation='gelu')
-        dropout2 = tf.keras.layers.Dropout(self._dropout_rate)
-        output2 = dropout2(dense2(output1))
-
-        #dense 3
-        dense3 = tf.keras.layers.Dense(64, activation='gelu')
-        dropout3 = tf.keras.layers.Dropout(self._dropout_rate)
-        output3 = dropout3(dense3(output2))
-
-        #softmax
+        # sigmoid
         sigmoid_layer = tf.keras.layers.Dense(self._num_classes, activation='sigmoid')
-        final_output = sigmoid_layer(output3)
-    
-        #combine the language model with the classificaiton part
+        final_output = sigmoid_layer(output1)
+        # combine the language model with the classificaiton part
         self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
         
         #create the optimizer
@@ -324,26 +205,11 @@ class MultiLabel_Text_Classifier(Classifier):
         my_metrics = MyTextClassificationMetrics(self._num_classes)
         metrics = my_metrics.get_all_metrics()
         
-        #compile the model
-        #self.model.compile(
-        #    optimizer=optimizer,
-        #    loss='binary_crossentropy',
-        #    metrics=[macro_cPrecision, macro_cRecall, macro_cF1,
-        #             micro_cPrecision, micro_cRecall, micro_cF1,
-        #             recall_c0, precision_c0, f1_c0,
-        #             recall_c1, precision_c1, f1_c1,
-        #             recall_c2, precision_c2, f1_c2,
-        #             recall_c3, precision_c3, f1_c3,
-        #             recall_c4, precision_c4, f1_c4
-        #     ]
-        #)
         self.model.compile(
             optimizer=optimizer,
             loss='binary_crossentropy',
             metrics=metrics
         )
-
-        
 
 
 class MultiClass_Text_Classifier(Classifier):
@@ -399,113 +265,6 @@ class MultiClass_Text_Classifier(Classifier):
             loss='categorical_crossentropy',
             metrics=['accuracy']
         )
-
-
-
-#Multilabel token classification is also possible, but unlikely, so I deleted it. If
-# it gets implemented in the future, don't forget to do the correct squashing function
-# for the final layer (softmax) and correct loss (CCE)
-
-class MultiClass_Token_Classifier(Classifier):
-    
-    def __init__(self, language_model_name, num_classes, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
-        '''
-        This is identical to the multi-label token classifier, 
-        except the last layer is a softmax, and the loss function is categorical cross entropy
-        '''
-        Classifier.__init__(self, language_model_name, language_model_trainable=language_model_trainable, max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
-        self._num_classes = num_classes
-        
-        #create the language model
-        language_model = self.load_language_model()
-
-        #print the GPUs that tensorflow can find, and enable memory growth.
-        # memory growth is something that CJ had to do, but doesn't work for me
-        # set memory growth prevents tensor flow from just grabbing all available VRAM
-        #physical_devices = tf.config.list_physical_devices('GPU')
-        #print (physical_devices)
-        #tf.config.experimental.set_memory_growth(physical_devices[0], True)
-        
-        #create the model
-        #create the input layer, it contains the input ids (from tokenizer) and the
-        # the padding mask (which masks padded values)
-        input_ids = Input(shape=(None,), dtype=tf.int32, name="input_ids")
-        input_padding_mask = Input(shape=(None,), dtype=tf.int32, name="input_padding_mask")
-
-        #create the embeddings - the 0th index is the last hidden layer
-        embeddings = language_model(input_ids=input_ids, attention_mask=input_padding_mask)[0]
-        
-        #now, create some dense layers
-        #dense 1
-        dense1 = tf.keras.layers.Dense(256, activation='gelu')
-        dropout1 = tf.keras.layers.Dropout(self._dropout_rate)
-        output1 = dropout1(dense1(embeddings))
-    
-        #dense 2
-        dense2 = tf.keras.layers.Dense(128, activation='gelu')
-        dropout2 = tf.keras.layers.Dropout(self._dropout_rate)
-        output2 = dropout2(dense2(output1))
-
-        #I have just 2 layers in this network to show how it can be done
-        # You just plug the output of output2 into the softmax layer
-
-        #softmax
-        sigmoid_layer = tf.keras.layers.Dense(self._num_classes, activation='sigmoid')
-        final_output = sigmoid_layer(output2)
-    
-        #combine the language model with the classificaiton part
-        self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
-    
-        #compile the model
-        optimizer = tf.keras.optimizers.Adam(lr=self._learning_rate)
-        self.model.compile(
-            optimizer=optimizer,
-            loss='binary_crossentropy',
-            metrics=['accuracy'] 
-        )#TODO - what metrics to report for multiclass? macro/micro F1, etc..? Other default metrics make this crash. I think we need to write our own, TODO - Jack has some
-        #TODO - this is crashing for me, and I'm not sure why. Jack's code works though
-
-    def train(self, x, y, batch_size=Classifier.BATCH_SIZE, validation_data=None, epochs=Classifier.EPOCHS, model_out_file_name=Classifier.MODEL_OUT_FILE_NAME, early_stopping_monitor='loss', early_stopping_patience=0, class_weights=None):
-        '''
-        Train for token classifier
-        '''
-        
-        #create a DataGenerator from the training data
-        training_data = Token_Classifier_DataGenerator(x, y, batch_size, self)
-        
-        # generate the validation data (if it exists)
-        if validation_data is not None:
-            validation_data = Token_Classifier_DataGenerator(validation_data[0], validation_data[1], batch_size, self)        
-            
-        # set up callbacks
-        callbacks = []
-        if not model_out_file_name == '':
-            callbacks.append(SaveModelWeightsCallback(self, model_out_file_name))
-        if early_stopping_patience > 0:
-            callbacks.append(EarlyStopping(monitor=early_stopping_monitor, patience=5))
-            
-        # fit the model to the training data
-        self.model.fit(
-            training_data,
-            epochs=epochs,
-            validation_data=validation_data,
-            class_weight=class_weights,
-            verbose=2,
-            callbacks=callbacks
-        )
-        
-
-
-#Example of a custom loss function - it doesn't do anything correct, but its how you would write
-# a custom loss function if you wanted to
-def custom_loss_example(y_true, y_pred):
-    # y_true = K.transpose(y_true)
-    # print(y_true)
-    y_pred = K.transpose(y_pred)
-
-    # print(y_true[0][0].get_shape())
-    # print(y_pred[0][0].get_shape())
-    return K.binary_crossentropy(y_true[0][0], y_pred[0][0])
 
 
 
