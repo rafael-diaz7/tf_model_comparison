@@ -252,7 +252,7 @@ def run_i2b2_dataset():
     #model_out_file_name = "my_models/model_out_trainable_true_then_finetune" # to save a model, need to uncomment some code below
     
     #set up the language model
-    language_model_name = Classifier.BLUE_BERT_PUBMED_MIMIC
+    language_model_name = Classifier.BIODISCHARGE_SUMMARY_BERT
     max_length = 512
     
     #load the dataset
