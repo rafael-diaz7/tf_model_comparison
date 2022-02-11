@@ -256,7 +256,7 @@ def run_i2b2_dataset():
     max_length = 512
     
     #load the dataset
-    data_filepath = '../data/i2b2_relex/i2b2_converted.tsv'
+    data_filepath = '../data/i2b2_converted.tsv'
     num_classes = 8
     data = i2b2Dataset(data_filepath, validation_set_size=0.2)
     #data = i2b2Dataset(data_filepath)
