@@ -37,7 +37,7 @@ class Classifier(ABC):
     BIODISCHARGE_SUMMARY_BERT = '../models/biobert_pretrain_output_disch_100000'
     
     #some default parameter values
-    EPOCHS = 50
+    EPOCHS = 1000
     BATCH_SIZE = 20
     MAX_LENGTH = 512
     #Note: MAX_LENGTH varies depending on the model. For Roberta, max_length = 768.
