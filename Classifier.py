@@ -34,7 +34,7 @@ class Classifier(ABC):
     '''
     # only using BIODISCHARGE SUMMARY BERT
     # not typically tf model, has been converted
-    BIODISCHARGE_SUMMARY_BERT = './models/biobert_pretrain_output_disch_100000'
+    BIODISCHARGE_SUMMARY_BERT = '../models/biobert_pretrain_output_disch_100000'
     
     #some default parameter values
     EPOCHS = 50
