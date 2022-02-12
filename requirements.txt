@@ -1,6 +1,6 @@
 tensorflow
 pandas
-numpy==1.19.5
+numpy==1.20
 transformers
 tensorflow_addons
 pydot
