@@ -231,8 +231,8 @@ def run_i2b2_dataset():
     # hyperparameter search
     # need to get system arguments [file, learning rate, drop out]
     cmdargs = sys.argv
-    lr = cmdargs[1]
-    do = cmdargs[2]
+    lr = float(cmdargs[1])
+    do = float(cmdargs[2])
    
     # training parameters
     max_epoch = 1000
