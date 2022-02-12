@@ -274,6 +274,7 @@ def run_i2b2_dataset():
                                             language_model_trainable=language_model_trainable,
                                             dropout_rate=dropout_rate)
 
+    print("USING learning_rate: {} dropout: {}, model: {}".format(learning_rate, dropout_rate, language_model_name))
     #load a model's weights from file, use this code
     #classifier.load_weights(model_in_file_name)
     

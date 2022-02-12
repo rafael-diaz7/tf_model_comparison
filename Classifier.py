@@ -109,6 +109,7 @@ class Classifier(ABC):
             callbacks.append(SaveModelWeightsCallback(self, model_out_file_name))
         if early_stopping_patience > 0:
             callbacks.append(EarlyStopping(monitor=early_stopping_monitor, patience=5))
+        callbacks.append(WriteMetrics(self.metric_file))
             
         # fit the model to the training data
         self.model.fit(
