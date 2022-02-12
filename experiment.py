@@ -23,7 +23,7 @@ def run_complex_example():
     seed = 2005 #TODO - need to ensure the seed actually does something
     
     #set up the language model
-    language_model_name = Classifier.BLUE_BERT_PUBMED
+    language_model_name = Classifier.BIODISCHARGE_SUMMARY_BERT
     max_length = 512
     
     #load the dataset
