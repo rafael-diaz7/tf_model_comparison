@@ -16,9 +16,9 @@ class WriteMetrics(Callback):
     '''
     Writes metrics at end of every epoch... 
     given metrics is:
-        num_neg, macro_precision, macro_recall, macro_F1, micro_precision, micro_recall, micro_F1
+        loss, num_neg, macro_precision, macro_recall, macro_F1, micro_precision, micro_recall, micro_F1
     writes:
-        epoch, time for epoch, num_neg, macro_precision, macro_recall, macro_F1, micro_precision, micro_recall, micro_F1
+        epoch, time, loss, num_neg, macro_precision, macro_recall, macro_F1, micro_precision, micro_recall, micro_F1
     '''
     def __init__(self, metric_filename):
         self.mf = metric_filename
@@ -28,18 +28,18 @@ class WriteMetrics(Callback):
         keys = list(logs.keys())
         print("At start; log keys: ".format(keys))
 
-    def on_epoch_begin(self, logs=None):
+    def on_epoch_begin(self, epoch, logs=None):
+        self.start = time.time()
         keys = list(logs.keys())
         print("Start of epoch {}; log keys: {}".format(epoch+1, keys))
-        start = time.time()
 
     def on_epoch_end(self, epoch, logs=None):
+        time_taken = int(time.time() - self.start)
         keys = list(logs.keys())
+        val_ind = keys.index('val_loss')
         print("End of epoch {}; log keys;: {}".format(epoch+1, keys))
         print(list(logs.values()))
         vals = list(logs.values())
-        end = time.time()
-        time_taken = time.time() - start
-        with open(mf, 'a') as file:
-            file.write("{},{}s,{:.4f},{:.4f},{:.4f},{:.4f},{:.4f},{:.4f},{:.4f}\n".format(
-                epoch+1, time_taken, vals[0], vals[1], vals[2], vals[3], vals[4], vals[5], vals[6]))
+        print("via logs: {}; via index: {}".format(logs['val_loss'], vals[val_ind])
+       	with open(self.mf, 'a') as file:
+		file.write("{},{}s,{:.4f},{:.4f},{:.4f},{:.4f},{:.4f},{:.4f},{:.4f},{:.4f}\n".format(epoch+1, time_taken, vals[val_ind], vals[val_ind+1], vals[val_ind+2], vals[val_ind+3], vals[val_ind+4], vals[val_ind+5], vals[val_ind+6], vals[val_ind+7]))
