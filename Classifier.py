@@ -188,14 +188,26 @@ class MultiLabel_Text_Classifier(Classifier):
         biLSTM_layer = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(units=lstm_size))
         sentence_representation_biLSTM = biLSTM_layer(embeddings)
         
-        # now, create one layer, sigmoid
+        # now, create three layer, sigmoid
         # dense 1
         dense1 = tf.keras.layers.Dense(256, activation='gelu')
         dropout1 = tf.keras.layers.Dropout(self._dropout_rate)
         output1 = dropout1(dense1(sentence_representation_biLSTM))
-        # sigmoid
+    
+        #dense 2
+        dense2 = tf.keras.layers.Dense(128, activation='gelu')
+        dropout2 = tf.keras.layers.Dropout(self._dropout_rate)
+        output2 = dropout2(dense2(output1))
+
+        #dense 3
+        dense3 = tf.keras.layers.Dense(64, activation='gelu')
+        dropout3 = tf.keras.layers.Dropout(self._dropout_rate)
+        output3 = dropout3(dense3(output2))
+
+        #softmax
         sigmoid_layer = tf.keras.layers.Dense(self._num_classes, activation='sigmoid')
-        final_output = sigmoid_layer(output1)
+        final_output = sigmoid_layer(output3)
+        
         # combine the language model with the classificaiton part
         self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
         
