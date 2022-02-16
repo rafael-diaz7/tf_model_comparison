@@ -108,8 +108,8 @@ class Classifier(ABC):
         if not model_out_file_name == '':
             callbacks.append(SaveModelWeightsCallback(self, model_out_file_name))
         if early_stopping_patience > 0:
-            callbacks.append(EarlyStopping(monitor=early_stopping_monitor, min_delta=0.0001, patience=early_stopping_patience, 
-            mode='min', restore_best_weights=True))
+            callbacks.append(EarlyStopping(monitor=early_stopping_monitor, min_delta=0, patience=early_stopping_patience,
+             restore_best_weights=True))
         callbacks.append(WriteMetrics(self.metric_file))
             
         # fit the model to the training data
@@ -184,7 +184,7 @@ class MultiLabel_Text_Classifier(Classifier):
         # not the individual words, so just the 0th index in the 3D tensor. Other indices are embeddings for
         # subsequent words in the sequence (http://jalammar.github.io/a-visual-guide-to-using-bert-for-the-first-time/)
 
-        lstm_size=128
+        lstm_size=512
         biLSTM_layer = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(units=lstm_size))
         sentence_representation_biLSTM = biLSTM_layer(embeddings)
         
@@ -224,61 +224,3 @@ class MultiLabel_Text_Classifier(Classifier):
             loss='binary_crossentropy',
             metrics=metrics
         )
-
-
-class MultiClass_Text_Classifier(Classifier):
-    def __init__(self, language_model_name, num_classes, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
-        
-        '''
-        This is identical to the MultiLabel_Text_Classifier, except the last layer uses
-        a softmax, loss is Categorical Cross Entropy
-        '''
-        Classifier.__init__(self, language_model_name, language_model_trainable=language_model_trainable, max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
-        self._num_classes = num_classes
-    
-        #create the language model
-        language_model = self.load_language_model()
-
-        #create the model
-        #create the input layer, it contains the input ids (from tokenizer) and the
-        # the padding mask (which masks padded values)
-        input_ids = Input(shape=(None,), dtype=tf.int32, name="input_ids")
-        input_padding_mask = Input(shape=(None,), dtype=tf.int32, name="input_padding_mask")
-
-        #create the embeddings - the 0th index is the last hidden layer
-        embeddings = language_model(input_ids=input_ids, attention_mask=input_padding_mask)[0]
-        
-        #In this example, we use a biLSTM to generate a sentence representation. We could use
-        # the langugae model directly (see multi-label text classifier)
-        lstm_size=128
-        biLSTM_layer = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(units=lstm_size))
-        sentence_representation_biLSTM = biLSTM_layer(embeddings)
-        
-        #now, create a dense layers
-        #dense 1
-        dense1 = tf.keras.layers.Dense(256, activation='gelu')
-        dropout1 = tf.keras.layers.Dropout(self._dropout_rate)
-        output1 = dropout1(dense1(sentence_representation_biLSTM))
-
-        #softmax
-        softmax_layer = tf.keras.layers.Dense(self._num_classes, activation='softmax')
-        final_output = softmax_layer(output1)
-    
-        #combine the language model with the classificaiton part
-        self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
-
-        # create the optimizer
-        optimizer = tf.keras.optimizers.Adam(lr=self._learning_rate)
-
-        # set up the metrics
-        #TODO - do metrics like multi-label
-        
-        #compile the model
-        self.model.compile(
-            optimizer=optimizer,
-            loss='categorical_crossentropy',
-            metrics=['accuracy']
-        )
-
-
-
