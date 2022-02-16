@@ -108,7 +108,7 @@ class Classifier(ABC):
         if not model_out_file_name == '':
             callbacks.append(SaveModelWeightsCallback(self, model_out_file_name))
         if early_stopping_patience > 0:
-            callbacks.append(EarlyStopping(monitor=early_stopping_monitor, min_delta=0, patience=early_stopping_patience,
+            callbacks.append(EarlyStopping(monitor=early_stopping_monitor, min_delta=0.0001, patience=early_stopping_patience,
              restore_best_weights=True))
         callbacks.append(WriteMetrics(self.metric_file))
             
