@@ -15,7 +15,7 @@ def run_i2b2_dataset():
    
     # training parameters
     max_epoch = 1000
-    batch_size = 200
+    batch_size = 20
     early_stopping_patience = 5
     early_stopping_monitor = 'loss'
 
