@@ -212,7 +212,7 @@ class MultiLabel_Text_Classifier(Classifier):
         self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
         
         #create the optimizer
-        optimizer = tf.keras.optimizers.Adam(lr=self._learning_rate)
+        optimizer = tf.keras.optimizers.Adam(learning_rate=self._learning_rate)
 
         # create the merics
         #from Metrics import MyMetrics
