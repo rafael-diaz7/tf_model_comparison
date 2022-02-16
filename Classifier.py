@@ -184,15 +184,15 @@ class MultiLabel_Text_Classifier(Classifier):
         # not the individual words, so just the 0th index in the 3D tensor. Other indices are embeddings for
         # subsequent words in the sequence (http://jalammar.github.io/a-visual-guide-to-using-bert-for-the-first-time/)
 
-        lstm_size=512
-        biLSTM_layer = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(units=lstm_size))
-        sentence_representation_biLSTM = biLSTM_layer(embeddings)
+        # lstm_size=512
+        # biLSTM_layer = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(units=lstm_size))
+        # sentence_representation_biLSTM = biLSTM_layer(embeddings)
         
         # now, create three layer, sigmoid
         # dense 1
         dense1 = tf.keras.layers.Dense(256, activation='gelu')
         dropout1 = tf.keras.layers.Dropout(self._dropout_rate)
-        output1 = dropout1(dense1(sentence_representation_biLSTM))
+        output1 = dropout1(dense1(sentence_representation_language_model))#sentence_representation_biLSTM))
     
         #dense 2
         dense2 = tf.keras.layers.Dense(128, activation='gelu')
