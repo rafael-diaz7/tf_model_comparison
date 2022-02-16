@@ -1,6 +1,7 @@
 from Classifier import *
 from Dataset import *
 import sys
+import os
 
 # Simple example to test multilabel text classification datasets
 def run_i2b2_dataset():
@@ -44,6 +45,7 @@ def run_i2b2_dataset():
 
     # creating the file for writing metrics to
     metric_file = "grid_search/{}/{}/{}_{}.csv".format(arch, ("BP" if bp else "noBP"), learning_rate, dropout_rate)
+    os.makedirs(os.path.dirname(metric_file), exist_ok=True)
     with open(metric_file, 'w') as file:
         file.write("epoch,time,loss,num_neg,macro_precision,macro_recall,macro_F1,micro_precision,micro_recall,micro_F1\n")
     

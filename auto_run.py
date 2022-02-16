@@ -7,11 +7,6 @@ architecture = ['CLS_1L', 'CLS_3L', 'biLSTM_3L', 'biLSTM_1L', 'BERT_SIG']
 learning_rates = [str((1 * (10 ** -x))) for x in range(8, 0, -1)] # 1 * 10^x ... 1e-8 -> 1e-1
 drop_out = ['0', '0.5', '0.8']
 
-# creates directory structure
-for i in architecture:
-    for j in learnable:
-        subprocess.run(['mkdir', 'grid_search/{}/{}/'.format(i, "BP" if j == "True" else "noBP")])
-
 # HYPERPARAMETER SEARCH
 
 # BIO DISCHARGE SUMMARY BERT model
