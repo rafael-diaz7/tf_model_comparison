@@ -184,7 +184,7 @@ class MultiLabel_Text_Classifier(Classifier):
         # not the individual words, so just the 0th index in the 3D tensor. Other indices are embeddings for
         # subsequent words in the sequence (http://jalammar.github.io/a-visual-guide-to-using-bert-for-the-first-time/)
 
-        lstm_size=128
+        lstm_size=512
         biLSTM_layer = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(units=lstm_size))
         sentence_representation_biLSTM = biLSTM_layer(embeddings)
         

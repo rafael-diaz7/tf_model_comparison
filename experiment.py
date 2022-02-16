@@ -233,7 +233,8 @@ def run_i2b2_dataset():
     cmdargs = sys.argv
     lr = float(cmdargs[1])
     do = float(cmdargs[2])
-    bp = bool(cmdargs[3])
+    bpS = cmdargs[3]
+    bp = True if bpS == "True" else False
     print("BP: ", bp)
    
     # training parameters
