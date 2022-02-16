@@ -16,5 +16,5 @@ back_prop = ['True', 'False']
 
 for i in learning_rates:
     for j in drop_out:
-        for k in back_prop
+        for k in back_prop:
             subprocess.run(['nohup', 'python3', 'experiment.py', i, j, k])
