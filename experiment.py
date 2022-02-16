@@ -234,6 +234,7 @@ def run_i2b2_dataset():
     lr = float(cmdargs[1])
     do = float(cmdargs[2])
     bp = bool(cmdargs[3])
+    print("BP: ", bp)
    
     # training parameters
     max_epoch = 1000
