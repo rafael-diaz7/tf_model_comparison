@@ -233,6 +233,7 @@ def run_i2b2_dataset():
     cmdargs = sys.argv
     lr = float(cmdargs[1])
     do = float(cmdargs[2])
+    bp = bool(cmdargs[3])
    
     # training parameters
     max_epoch = 1000
@@ -245,7 +246,7 @@ def run_i2b2_dataset():
     #dropout_rate = 0.8
     learning_rate = lr
     dropout_rate = do
-    language_model_trainable = False
+    language_model_trainable = bp
     
     # parameters to load and save a model
     #model_in_file_name = "my_models/model_out_trainable_true" # to load a model, need to uncomment some code below
@@ -263,7 +264,7 @@ def run_i2b2_dataset():
     #exit()
 
     # creating the file for writing metrics to
-    metric_file = "hyperparam_metrics2/{}_{}.csv".format(learning_rate, dropout_rate)
+    metric_file = "hyperparam_metrics2/{}_{}_{}.csv".format(learning_rate, dropout_rate, "BP" if bp else "noBP")
     with open(metric_file, 'w') as file:
         file.write("epoch,time,loss,num_neg,macro_precision,macro_recall,macro_F1,micro_precision,micro_recall,micro_F1\n")
     
@@ -274,7 +275,7 @@ def run_i2b2_dataset():
                                             language_model_trainable=language_model_trainable,
                                             dropout_rate=dropout_rate)
 
-    print("USING learning_rate: {} dropout: {}, model: {}".format(learning_rate, dropout_rate, language_model_name))
+    print("USING learning_rate: {} dropout: {}, model: {}, back_prop: {}".format(learning_rate, dropout_rate, language_model_name, bp))
     #load a model's weights from file, use this code
     #classifier.load_weights(model_in_file_name)
     
