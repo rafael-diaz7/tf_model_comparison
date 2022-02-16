@@ -4,7 +4,7 @@ subprocess.run(['mkdir', 'CLS_3L'])
 
 learning_rates = [str((1 * (10 ** -x))) for x in range(8, 0, -1)] # 1 * 10^x ... 1e-8 -> 1e-1
 drop_out = ['0', '0.5', '0.8']
-back_prop = ['False']
+back_prop = ['True']
 
 # HYPERPARAMETER SEARCH
 
