@@ -266,7 +266,7 @@ def run_i2b2_dataset():
     #exit()
 
     # creating the file for writing metrics to
-    metric_file = "biLSTM_3L/{}_{}_{}.csv".format(learning_rate, dropout_rate, ("BP" if bp else "noBP"))
+    metric_file = "CLS_3L/{}_{}_{}.csv".format(learning_rate, dropout_rate, ("BP" if bp else "noBP"))
     with open(metric_file, 'w') as file:
         file.write("epoch,time,loss,num_neg,macro_precision,macro_recall,macro_F1,micro_precision,micro_recall,micro_F1\n")
     
