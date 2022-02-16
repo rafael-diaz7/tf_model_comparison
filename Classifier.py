@@ -155,7 +155,7 @@ class Classifier(ABC):
         self.model.load_weights(filepath)
 
 
-class MultiLabel_Text_Classifier(Classifier):
+class CLS_1L(Classifier):
 
     def __init__(self, language_model_name, num_classes, metric_file, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
         
@@ -173,38 +173,73 @@ class MultiLabel_Text_Classifier(Classifier):
         language_model = self.load_language_model()
         
         #create the embeddings - the 0th index is the last hidden layer
-        embeddings = language_model(input_ids=input_ids, attention_mask=input_padding_mask)[0]
+        embeddings = language_model(input_ids=input_ids, attention_mask=input_padding_mask)[0]  # straight from BERT
         
-        #We can create a sentence embedding using the one directly from BERT, or using a biLSTM
-        # OR, we can return the sequence from BERT (just don't slice) or the BiLSTM (use retrun_sequences=True)
-        #create the sentence embedding layer - using the BERT sentence representation (cls token)    
-        #embeddings = language_model(input_ids=input_ids, attention_mask=input_padding_mask)[0][:,0,:]
-        sentence_representation_language_model = embeddings[:,0,:]
-        #Note: we are slicing because this is a sentence classification task. We only need the cls predictions
-        # not the individual words, so just the 0th index in the 3D tensor. Other indices are embeddings for
-        # subsequent words in the sequence (http://jalammar.github.io/a-visual-guide-to-using-bert-for-the-first-time/)
-
-        # lstm_size=512
-        # biLSTM_layer = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(units=lstm_size))
-        # sentence_representation_biLSTM = biLSTM_layer(embeddings)
+        sentence_representation_language_model = embeddings[:,0,:] # CLS
         
-        # now, create three layer, sigmoid
         # dense 1
         dense1 = tf.keras.layers.Dense(256, activation='gelu')
         dropout1 = tf.keras.layers.Dropout(self._dropout_rate)
-        output1 = dropout1(dense1(sentence_representation_language_model))#sentence_representation_biLSTM))
+        output1 = dropout1(dense1(sentence_representation_language_model))
+
+        # sigmoid
+        sigmoid_layer = tf.keras.layers.Dense(self._num_classes, activation='sigmoid')
+        final_output = sigmoid_layer(output1)
+        
+        # combine the language model with the classificaiton part
+        self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
+        
+        #create the optimizer
+        optimizer = tf.keras.optimizers.Adam(learning_rate=self._learning_rate)
+
+        # create the metrics
+        my_metrics = MyTextClassificationMetrics(self._num_classes)
+        metrics = my_metrics.get_all_metrics()
+        
+        self.model.compile(
+            optimizer=optimizer,
+            loss=tf.keras.losses.BinaryCrossentropy(),
+            metrics=metrics
+        )
+
+class CLS_3L(Classifier):
+
+    def __init__(self, language_model_name, num_classes, metric_file, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
+        
+        Classifier.__init__(self, language_model_name, metric_file, language_model_trainable=language_model_trainable, max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
+        # set instance attributes
+        self._num_classes = num_classes
+        
+        #create the model
+        #create the input layer, it contains the input ids (from tokenizer) and the
+        # the padding mask (which masks padded values)
+        input_ids = Input(shape=(None,), dtype=tf.int32, name="input_ids")
+        input_padding_mask = Input(shape=(None,), dtype=tf.int32, name="input_padding_mask")
+ 
+        # create the language model
+        language_model = self.load_language_model()
+        
+        #create the embeddings - the 0th index is the last hidden layer
+        embeddings = language_model(input_ids=input_ids, attention_mask=input_padding_mask)[0]  # straight from BERT
+        
+        sentence_representation_language_model = embeddings[:,0,:] # CLS
+
+        # dense 1
+        dense1 = tf.keras.layers.Dense(256, activation='gelu')
+        dropout1 = tf.keras.layers.Dropout(self._dropout_rate)
+        output1 = dropout1(dense1(sentence_representation_language_model))
     
-        #dense 2
+        # dense 2
         dense2 = tf.keras.layers.Dense(128, activation='gelu')
         dropout2 = tf.keras.layers.Dropout(self._dropout_rate)
         output2 = dropout2(dense2(output1))
 
-        #dense 3
+        # dense 3
         dense3 = tf.keras.layers.Dense(64, activation='gelu')
         dropout3 = tf.keras.layers.Dropout(self._dropout_rate)
         output3 = dropout3(dense3(output2))
 
-        #softmax
+        # sigmoid
         sigmoid_layer = tf.keras.layers.Dense(self._num_classes, activation='sigmoid')
         final_output = sigmoid_layer(output3)
         
@@ -214,8 +249,159 @@ class MultiLabel_Text_Classifier(Classifier):
         #create the optimizer
         optimizer = tf.keras.optimizers.Adam(learning_rate=self._learning_rate)
 
-        # create the merics
-        #from Metrics import MyMetrics
+        # create the metrics
+        my_metrics = MyTextClassificationMetrics(self._num_classes)
+        metrics = my_metrics.get_all_metrics()
+        
+        self.model.compile(
+            optimizer=optimizer,
+            loss=tf.keras.losses.BinaryCrossentropy(),
+            metrics=metrics
+        )
+
+class biLSTM_1L(Classifier):
+
+    def __init__(self, language_model_name, num_classes, metric_file, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
+        
+        Classifier.__init__(self, language_model_name, metric_file, language_model_trainable=language_model_trainable, max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
+        # set instance attributes
+        self._num_classes = num_classes
+        
+        #create the model
+        #create the input layer, it contains the input ids (from tokenizer) and the
+        # the padding mask (which masks padded values)
+        input_ids = Input(shape=(None,), dtype=tf.int32, name="input_ids")
+        input_padding_mask = Input(shape=(None,), dtype=tf.int32, name="input_padding_mask")
+ 
+        # create the language model
+        language_model = self.load_language_model()
+        
+        #create the embeddings - the 0th index is the last hidden layer
+        embeddings = language_model(input_ids=input_ids, attention_mask=input_padding_mask)[0]  # straight from BERT
+        
+        sentence_representation_language_model = embeddings[:,0,:] # CLS
+
+        lstm_size=256
+        biLSTM_layer = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(units=lstm_size))
+        sentence_representation_biLSTM = biLSTM_layer(embeddings)
+        
+        # dense 1
+        dense1 = tf.keras.layers.Dense(256, activation='gelu')
+        dropout1 = tf.keras.layers.Dropout(self._dropout_rate)
+        output1 = dropout1(dense1(sentence_representation_biLSTM))
+
+        # sigmoid
+        sigmoid_layer = tf.keras.layers.Dense(self._num_classes, activation='sigmoid')
+        final_output = sigmoid_layer(output1)
+        
+        # combine the language model with the classificaiton part
+        self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
+        
+        #create the optimizer
+        optimizer = tf.keras.optimizers.Adam(learning_rate=self._learning_rate)
+
+        # create the metrics
+        my_metrics = MyTextClassificationMetrics(self._num_classes)
+        metrics = my_metrics.get_all_metrics()
+        
+        self.model.compile(
+            optimizer=optimizer,
+            loss=tf.keras.losses.BinaryCrossentropy(),
+            metrics=metrics
+        )
+
+class biLSTM_3L(Classifier):
+
+    def __init__(self, language_model_name, num_classes, metric_file, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
+        
+        Classifier.__init__(self, language_model_name, metric_file, language_model_trainable=language_model_trainable, max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
+        # set instance attributes
+        self._num_classes = num_classes
+        
+        #create the model
+        #create the input layer, it contains the input ids (from tokenizer) and the
+        # the padding mask (which masks padded values)
+        input_ids = Input(shape=(None,), dtype=tf.int32, name="input_ids")
+        input_padding_mask = Input(shape=(None,), dtype=tf.int32, name="input_padding_mask")
+ 
+        # create the language model
+        language_model = self.load_language_model()
+        
+        #create the embeddings - the 0th index is the last hidden layer
+        embeddings = language_model(input_ids=input_ids, attention_mask=input_padding_mask)[0]  # straight from BERT
+        
+        sentence_representation_language_model = embeddings[:,0,:] # CLS
+
+        lstm_size=512
+        biLSTM_layer = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(units=lstm_size))
+        sentence_representation_biLSTM = biLSTM_layer(embeddings)
+        
+        # dense 1
+        dense1 = tf.keras.layers.Dense(256, activation='gelu')
+        dropout1 = tf.keras.layers.Dropout(self._dropout_rate)
+        output1 = dropout1(dense1(sentence_representation_biLSTM))
+    
+        # dense 2
+        dense2 = tf.keras.layers.Dense(128, activation='gelu')
+        dropout2 = tf.keras.layers.Dropout(self._dropout_rate)
+        output2 = dropout2(dense2(output1))
+
+        # dense 3
+        dense3 = tf.keras.layers.Dense(64, activation='gelu')
+        dropout3 = tf.keras.layers.Dropout(self._dropout_rate)
+        output3 = dropout3(dense3(output2))
+
+        # sigmoid
+        sigmoid_layer = tf.keras.layers.Dense(self._num_classes, activation='sigmoid')
+        final_output = sigmoid_layer(output3)
+        
+        # combine the language model with the classificaiton part
+        self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
+        
+        #create the optimizer
+        optimizer = tf.keras.optimizers.Adam(learning_rate=self._learning_rate)
+
+        # create the metrics
+        my_metrics = MyTextClassificationMetrics(self._num_classes)
+        metrics = my_metrics.get_all_metrics()
+        
+        self.model.compile(
+            optimizer=optimizer,
+            loss=tf.keras.losses.BinaryCrossentropy(),
+            metrics=metrics
+        )
+
+class BERT_SIG(Classifier):
+
+    def __init__(self, language_model_name, num_classes, metric_file, language_model_trainable=False, max_length=Classifier.MAX_LENGTH, learning_rate=Classifier.LEARNING_RATE, dropout_rate=Classifier.DROPOUT_RATE):
+        
+        Classifier.__init__(self, language_model_name, metric_file, language_model_trainable=language_model_trainable, max_length=max_length, learning_rate=learning_rate, dropout_rate=dropout_rate)
+        # set instance attributes
+        self._num_classes = num_classes
+        
+        #create the model
+        #create the input layer, it contains the input ids (from tokenizer) and the
+        # the padding mask (which masks padded values)
+        input_ids = Input(shape=(None,), dtype=tf.int32, name="input_ids")
+        input_padding_mask = Input(shape=(None,), dtype=tf.int32, name="input_padding_mask")
+ 
+        # create the language model
+        language_model = self.load_language_model()
+        
+        #create the embeddings - the 0th index is the last hidden layer
+        embeddings = language_model(input_ids=input_ids, attention_mask=input_padding_mask)[0]  # straight from BERT
+
+        # sigmoid
+        sigmoid_layer = tf.keras.layers.Dense(self._num_classes, activation='sigmoid')
+        final_output = sigmoid_layer(embeddings)
+        
+        # combine the language model with the classificaiton part
+        self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])
+        
+        #create the optimizer
+        optimizer = tf.keras.optimizers.Adam(learning_rate=self._learning_rate)
+
+        # create the metrics
         my_metrics = MyTextClassificationMetrics(self._num_classes)
         metrics = my_metrics.get_all_metrics()
         

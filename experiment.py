@@ -7,15 +7,16 @@ def run_i2b2_dataset():
     # hyperparameter search
     # need to get system arguments [file, learning rate, drop out]
     cmdargs = sys.argv
-    lr = float(cmdargs[1])
-    do = float(cmdargs[2])
-    bpS = cmdargs[3]
+    lr = float(cmdargs[1]) # learning rate
+    do = float(cmdargs[2]) # drop out
+    bpS = cmdargs[3] # back propogation
     bp = True if bpS == "True" else False
-    print("BP: ", bp)
+    arch = cmdargs[4] # architecture
    
     # training parameters
     max_epoch = 1000
-    batch_size = 20
+    batch_size = 20 if bp else 200
+    print(batch_size)
     early_stopping_patience = 5
     early_stopping_monitor = 'loss'
 
@@ -42,16 +43,21 @@ def run_i2b2_dataset():
     #exit()
 
     # creating the file for writing metrics to
-    metric_file = "CLS_3L/{}_{}_{}.csv".format(learning_rate, dropout_rate, ("BP" if bp else "noBP"))
+    metric_file = "grid_search/{}/{}/{}_{}.csv".format(arch, ("BP" if bp else "noBP"), learning_rate, dropout_rate)
     with open(metric_file, 'w') as file:
         file.write("epoch,time,loss,num_neg,macro_precision,macro_recall,macro_F1,micro_precision,micro_recall,micro_F1\n")
     
     #create classifier and load data for a multiclass text classifier
-    classifier = MultiLabel_Text_Classifier(language_model_name, num_classes, metric_file,
-                                            max_length=max_length,
-                                            learning_rate=learning_rate,
-                                            language_model_trainable=language_model_trainable,
-                                            dropout_rate=dropout_rate)
+    if arch == "CLS_1L":
+        classifier = CLS_1L(language_model_name, num_classes, metric_file, max_length=max_length, learning_rate=learning_rate, language_model_trainable=language_model_trainable, dropout_rate=dropout_rate)
+    else if arch == "CLS_3L": 
+        classifier = CLS_3L(language_model_name, num_classes, metric_file, max_length=max_length, learning_rate=learning_rate, language_model_trainable=language_model_trainable, dropout_rate=dropout_rate)
+    else if arch == "biLSTM_1L":
+        classifier = biLSTM_1L(language_model_name, num_classes, metric_file, max_length=max_length, learning_rate=learning_rate, language_model_trainable=language_model_trainable, dropout_rate=dropout_rate)
+    else if arch == "biLSTM_3L":
+        classifier = biLSTM_3L(language_model_name, num_classes, metric_file, max_length=max_length, learning_rate=learning_rate, language_model_trainable=language_model_trainable, dropout_rate=dropout_rate)
+    else if arch == "BERT_SIG":
+        classifier = BERT_SIG(language_model_name, num_classes, metric_file, max_length=max_length, learning_rate=learning_rate, language_model_trainable=language_model_trainable, dropout_rate=dropout_rate)       
 
     print("USING learning_rate: {} dropout: {}, model: {}, back_prop: {}".format(learning_rate, dropout_rate, language_model_name, bp))
     #load a model's weights from file, use this code
