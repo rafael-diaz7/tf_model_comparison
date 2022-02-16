@@ -257,14 +257,14 @@ def run_i2b2_dataset():
     max_length = 512
     
     #load the dataset
-    data_filepath = '../data/i2b2_converted.tsv'
+    data_filepath = '../data/split_train.tsv'
     num_classes = 8
     data = i2b2Dataset(data_filepath, validation_set_size=0.2)
     #data = i2b2Dataset(data_filepath)
     #exit()
 
     # creating the file for writing metrics to
-    metric_file = "biLISTM_3L/{}_{}_{}.csv".format(learning_rate, dropout_rate, "BP" if bp else "noBP")
+    metric_file = "biLSTM_3L/{}_{}_{}.csv".format(learning_rate, dropout_rate, "BP" if bp else "noBP")
     with open(metric_file, 'w') as file:
         file.write("epoch,time,loss,num_neg,macro_precision,macro_recall,macro_F1,micro_precision,micro_recall,micro_F1\n")
     
