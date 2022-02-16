@@ -50,13 +50,13 @@ def run_i2b2_dataset():
     #create classifier and load data for a multiclass text classifier
     if arch == "CLS_1L":
         classifier = CLS_1L(language_model_name, num_classes, metric_file, max_length=max_length, learning_rate=learning_rate, language_model_trainable=language_model_trainable, dropout_rate=dropout_rate)
-    else if arch == "CLS_3L": 
+    elif arch == "CLS_3L": 
         classifier = CLS_3L(language_model_name, num_classes, metric_file, max_length=max_length, learning_rate=learning_rate, language_model_trainable=language_model_trainable, dropout_rate=dropout_rate)
-    else if arch == "biLSTM_1L":
+    elif arch == "biLSTM_1L":
         classifier = biLSTM_1L(language_model_name, num_classes, metric_file, max_length=max_length, learning_rate=learning_rate, language_model_trainable=language_model_trainable, dropout_rate=dropout_rate)
-    else if arch == "biLSTM_3L":
+    elif arch == "biLSTM_3L":
         classifier = biLSTM_3L(language_model_name, num_classes, metric_file, max_length=max_length, learning_rate=learning_rate, language_model_trainable=language_model_trainable, dropout_rate=dropout_rate)
-    else if arch == "BERT_SIG":
+    elif arch == "BERT_SIG":
         classifier = BERT_SIG(language_model_name, num_classes, metric_file, max_length=max_length, learning_rate=learning_rate, language_model_trainable=language_model_trainable, dropout_rate=dropout_rate)       
 
     print("USING learning_rate: {} dropout: {}, model: {}, back_prop: {}".format(learning_rate, dropout_rate, language_model_name, bp))
