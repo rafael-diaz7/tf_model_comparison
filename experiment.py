@@ -75,7 +75,7 @@ def run_i2b2_dataset():
     #plot the model (an image)
     tf.keras.utils.plot_model(
         classifier.model,
-        to_file="models/{}.png".format(architecture),
+        to_file="models/{}.png".format(arch),
         show_shapes=True,
         show_dtype=True,
         show_layer_names=True,
