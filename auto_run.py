@@ -1,6 +1,7 @@
 import subprocess
 
 subprocess.run(['mkdir', 'grid_search'])
+subprocess.run(['mkdir', 'models'])
 
 learnable = ['True', 'False']
 architecture = ['CLS_1L', 'CLS_3L', 'biLSTM_3L', 'biLSTM_1L', 'BERT_SIG']
