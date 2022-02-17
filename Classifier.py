@@ -332,7 +332,7 @@ class biLSTM_3L(Classifier):
         
         sentence_representation_language_model = embeddings[:,0,:] # CLS
 
-        lstm_size=512
+        lstm_size=256
         biLSTM_layer = tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(units=lstm_size))
         sentence_representation_biLSTM = biLSTM_layer(embeddings)
         
@@ -391,9 +391,11 @@ class BERT_SIG(Classifier):
         #create the embeddings - the 0th index is the last hidden layer
         embeddings = language_model(input_ids=input_ids, attention_mask=input_padding_mask)[0]  # straight from BERT
 
+        sentence_representation_language_model = embeddings[:,0,:] # CLS
+
         # sigmoid
         sigmoid_layer = tf.keras.layers.Dense(self._num_classes, activation='sigmoid')
-        final_output = sigmoid_layer(embeddings)
+        final_output = sigmoid_layer(sentence_representation_language_model)
         
         # combine the language model with the classificaiton part
         self.model = Model(inputs=[input_ids, input_padding_mask], outputs=[final_output])

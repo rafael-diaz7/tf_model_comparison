@@ -19,7 +19,7 @@ def run_i2b2_dataset():
     batch_size = 20 if bp else 200
     print(batch_size)
     early_stopping_patience = 5
-    early_stopping_monitor = 'loss'
+    early_stopping_monitor = 'val_loss'
 
     # model hyperparameters
     #learning_rate = 0.01
